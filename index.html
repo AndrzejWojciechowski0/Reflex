@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Whack A Mole!</title>
+  <title>ùderzëc zwiérz</title>
   <link href='https://fonts.googleapis.com/css?family=Amatic+SC:400,700' rel='stylesheet' type='text/css'>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
@@ -12,10 +12,10 @@
 <body>
 
   <section id="left">
-    <h1>Whack-a-mole! <span class="score">0</span></h1>
+    <h1>ùderzëc zwiérz!<span class="score">0</span></h1>
     <div class="row">
-      <input class="input" size="6" type="text" placeholder="ksywka" name="" id="nick" />
-      <h3 onClick="startGame()">Start!</h3>
+      <input class="input" size="6" type="text" placeholder="miono" name="" id="nick" />
+      <h3 id = "start-button">zôczątk!</h3>
     </div>
     <div id="game">
       <div class="hole hole1">
@@ -40,7 +40,7 @@
   </section>
   <section id="right">
     <div id="leadboard">
-      <h3>Leadboard</h3>
+      <h3>tôfla</h3>
       <div id="scores">
 
       </div>
@@ -56,6 +56,80 @@
     const leadboard = document.querySelector('#scores');
     const scores = document.querySelector('#scores');
     const nick = document.querySelector('#nick');
+
+    let points = 0;
+    let lastHole = null;
+    let timeUp = true;
+
+    function endGame() {
+      timeUp = true;
+      const score = {
+        nick:nick.value.trim(),
+        points:points
+      
+      }
+      console.log(score)
+      socket.emit("update", score)
+    }
+    
+    function startGame() {
+      if(!timeUp) return;
+      timeUp = false;
+      points = 0;
+      scoreBoard.innerText = points;
+      peep();
+      setTimeout(endGame,10000);
+    }
+    document.querySelector("#start-button").addEventListener("click",startGame);
+    function randomTime(min,max) {
+      return Math.round(Math.random() * (max - min) + min);
+    }
+    function randomHole() {
+      return holes[randomTime(0,holes.length-1)];
+      while(hole === lastHole) hole = holes[randomTimes(0,holes.length-1)];
+      lastHole = hole;
+      return hole;
+    }
+    function peep() {
+      if(timeUp) return;
+      const time = randomTime(400,1100);
+      const hole = randomHole();
+      hole.classList.add("up");
+      setTimeout(()=>{
+      hole.classList.remove("up")
+      peep()
+      },time);
+      
+    }
+    function bonk(event){
+      const mole = event.target;
+      const hole = mole.parentNode;
+      if(timeUp) return;
+      points++;
+      scoreBoard.innerText = points;
+      hole.classList.remove("up");
+      lastHole = hole;
+    }
+    moles.forEach(mole => mole.addEventListener("click",bonk))
+    function buildScore(score){
+      return `<div class="row ${score.lastest ? "lastest" : "" }"> 
+          <span class="nick">${score.nick}</span> 
+          <span class="points">${score.points}</span>
+            </div>`;
+    }
+    function buildLeadboard(highscores){
+      return highscores.map( buildScore).join("")
+    }
+    function updateLeadboard(highscores){
+      scores.innerHTML = buildLeadboard(highscores)
+    }
+    
+    let temp = [];
+    socket.on("update", updateLeadboard)
+    fetch(api+"highscores")
+      .then(response => response.json())
+      .then(json=>updateLeadboard(json))
+    
 
   </script>
 </body>
